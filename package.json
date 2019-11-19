@@ -1,0 +1,19 @@
+{
+  "name": "awesome-select",
+  "version": "1.0.0",
+  "description": "[![Support](https://supporterhq.com/api/b/9okwcyts1gevgy53glt8ffpyc)](https://supporterhq.com/give/9okwcyts1gevgy53glt8ffpyc)",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cichacz/awesome-select.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/cichacz/awesome-select/issues"
+  },
+  "homepage": "https://github.com/cichacz/awesome-select#readme"
+}
