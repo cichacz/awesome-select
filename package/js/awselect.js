@@ -321,6 +321,11 @@ $(document).ready(function() {
         var option_value = $(select).children("option").eq(value_index);
         var callback = $(select).attr("data-callback");
         $(select).val(option_value.val());
-        $(select).trigger("change");
+
+        // dispatch native event rather than jQuery one
+        var event = new Event('change',{
+            bubbles: true
+        });
+        select.get(0).dispatchEvent(event);
     });
 });
