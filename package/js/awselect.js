@@ -29,14 +29,13 @@ var mobile_width = 800;
             animate(getawselectElement($(this)));
             
         });
-        this.on("change", function() {
+        this.on("change", function(e) {
             setValue(this);
         });
         this.on("aw:deanimate", function() {
            deanimate(getawselectElement($(this)))
         });
 
-        console.log(element.attr("id"));
         return {
             blue: function() {
                 element.css("color", "blue");
@@ -59,10 +58,7 @@ var mobile_width = 800;
     function build(element, opts) {
         var placeholder = element.attr("data-placeholder");
         var id = element.attr("id");
-        var options = element.children("option");
-        var selected = false;
         var classes = "awselect";
-        var options_html = "";
         var background = opts["background"];
         var active_background = opts["active_background"];
         var placeholder_color = opts["placeholder_color"];
@@ -71,42 +67,89 @@ var mobile_width = 800;
         var vertical_padding = opts["vertical_padding"];
         var horizontal_padding = opts["horizontal_padding"];
         var immersive = opts["immersive"];
+        var options = buildOptions(element, horizontal_padding);
+        var selected = options.find('.selected');
+
         if ( immersive !== true ) {
             var immersive = false;
         }
 
-        options.each(function() {
-            if (typeof $(this).attr("selected") !== typeof undefined && $(this).attr("selected") !== false) {
-                selected = $(this).text();
-            }
-            options_html += '<li><a style="padding: 2px '+ horizontal_padding +'">' + $(this).text() + '</a></li>';
-        });
-        if (selected !== false) {
+        if (selected.length > 0) {
             classes += " hasValue";
         }
+
         if (typeof id !== typeof undefined && id !== false) {
             id_html = id;
         } else {
             id_html = "awselect_" + awselect_count;
             $(element).attr("id", id_html);
         }
-        var awselect_html = '<div data-immersive="'+ immersive +'" id="awselect_' + id_html + '" data-select="' + id_html + '" class = "' + classes + '"><div style="background:' + active_background + '" class = "bg"></div>';
-        awselect_html += '<div style="padding:' + vertical_padding + " " + horizontal_padding + '" class = "front_face">';
-        awselect_html += '<div style="background:' + background + '" class = "bg"></div>';
-        awselect_html += '<div data-inactive-color="' + placeholder_active_color + '" style="color:' + placeholder_color + '" class = "content">';
-        if (selected !== false) {
-            awselect_html += '<span class="current_value">' + selected + "</span>";
+
+        var awselect_html = $('<div data-immersive="'+ immersive +'" id="awselect_' + id_html + '" data-select="' + id_html + '" class = "' + classes + '"><div style="background:' + active_background + '" class = "bg"></div>');
+        var front_face = $('<div style="padding:' + vertical_padding + " " + horizontal_padding + '" class = "front_face">');
+        var front_face_content = $('<div data-inactive-color="' + placeholder_active_color + '" style="color:' + placeholder_color + '" class = "content">');
+        var back_face = $('<div style="padding:' + vertical_padding + ' 0;" class = "back_face">');
+
+        if (selected.length > 0) {
+            var label = selected.data('parent-label') || '';
+             if(label) {
+                label += ': ';
+             }
+             label += selected.text();
+            front_face_content.append('<span class="current_value">' + label + "</span>");
         }
-        awselect_html += '<span class = "placeholder">' + placeholder + "</span>";
-        awselect_html += '<i class = "icon">' + icon(placeholder_color) + "</i>";
-        awselect_html += "</div>";
-        awselect_html += "</div>";
-        awselect_html += '<div style="padding:' + vertical_padding + ' 0;" class = "back_face"><ul style="color:' + option_color + '">';
-        awselect_html += options_html;
-        awselect_html += "</ul></div>";
-        awselect_html += "</div>";
-        $(awselect_html).insertAfter(element);
-       element.hide();
+        front_face_content.append('<span class = "placeholder">' + placeholder + "</span>");
+        front_face_content.append('<i class = "icon">' + icon(placeholder_color) + "</i>");
+
+        front_face.append('<div style="background:' + background + '" class = "bg"></div>');
+        front_face.append(front_face_content);
+
+        back_face.append(options);
+
+        awselect_html.append(front_face);
+        awselect_html.append(back_face);
+        awselect_html.insertAfter(element);
+
+        element.hide();
+    }
+
+    function buildOptions(parent, horizontal_padding, nest_level) {
+        var options_html = $('<ul/>');
+        if (typeof nest_level === "undefined") {
+            nest_level = 1;
+        }
+        parent.children().each(function() {
+            if(this.nodeName === "OPTGROUP") {
+                var option = $('<li/>');
+                var optionLink = $('<div class="font-weight-bold" style="padding: 2px '+ horizontal_padding +'">' + $(this).attr('label') + '</div>');
+                option.append(optionLink);
+                option.append(buildOptions($(this), horizontal_padding, nest_level + 1));
+                options_html.append(option);
+                return true;
+            }
+
+            var optionEl = this;
+            var option = $('<li/>');
+            var optionLink = $('<a style="padding: 2px '+ (parseInt(horizontal_padding, 10) + (5 * nest_level)) +'px">' + $(optionEl).text() + '</a>');
+
+            option.data('parent-label', $(parent).attr('label'));
+            if (typeof $(optionEl).attr("selected") !== typeof undefined && $(optionEl).attr("selected") !== false) {
+                option.addClass('selected');
+            }
+
+            optionLink.on('click', function() {
+                optionEl.selected = true;
+                var event = new Event('change', {
+                    bubbles: true
+                });
+                optionEl.dispatchEvent(event);
+            });
+
+            option.append(optionLink);
+            options_html.append(option);
+        });
+
+        return options_html;
     }
 
     function animate(element) {
@@ -275,13 +318,12 @@ var mobile_width = 800;
         element.find(".front_face .content").css("color", placeholder_inactive_color);
         element.find(".front_face .icon svg").css("fill", placeholder_inactive_color);
     }
-    function setValue(select) {
-        var val = $(select).val();
+    function setValue(option_value) {
+        var select = $(option_value).closest('select');
         var awselect = getawselectElement($(select));
-        var option_value = $(select).children('option[value="' + val + '"]').eq(0);
         var callback = $(select).attr("data-callback");
         $(awselect).find(".current_value").remove();
-        $(awselect).find(".front_face .content").prepend('<span class = "current_value">' + option_value.text() + "</span>");
+        $(awselect).find(".front_face .content").prepend('<span class = "current_value">' + option_value.innerText + "</span>");
         $(awselect).addClass("hasValue");
         if (typeof callback !== typeof undefined && callback !== false) {
             window[callback](option_value.val());
@@ -309,23 +351,5 @@ $(document).ready(function() {
              $("select#" + dropdown.attr("id").replace("awselect_", "")).trigger("aw:deanimate");
         }
         
-    });
-
-
-
-    $("body").on("click", ".awselect ul li a", function() {
-        var dropdown = $(this).parents(".awselect");
-        var value_index = $(this).parent("li").index();
-        var id = dropdown.attr("data-select");
-        var select = $("select#" + id);
-        var option_value = $(select).children("option").eq(value_index);
-        var callback = $(select).attr("data-callback");
-        $(select).val(option_value.val());
-
-        // dispatch native event rather than jQuery one
-        var event = new Event('change',{
-            bubbles: true
-        });
-        select.get(0).dispatchEvent(event);
     });
 });
