@@ -30,7 +30,7 @@ var mobile_width = 800;
             
         });
         this.on("change", function(e) {
-            setValue(this);
+            setValue(this, e.target);
         });
         this.on("aw:deanimate", function() {
            deanimate(getawselectElement($(this)))
@@ -318,12 +318,17 @@ var mobile_width = 800;
         element.find(".front_face .content").css("color", placeholder_inactive_color);
         element.find(".front_face .icon svg").css("fill", placeholder_inactive_color);
     }
-    function setValue(option_value) {
-        var select = $(option_value).closest('select');
+    function setValue(select, option_value) {
         var awselect = getawselectElement($(select));
         var callback = $(select).attr("data-callback");
+        var label = $(option_value).closest('optgroup').attr('label') || '';
+        if(label) {
+            label += ': ';
+        }
+        label += option_value.innerText;
+
         $(awselect).find(".current_value").remove();
-        $(awselect).find(".front_face .content").prepend('<span class = "current_value">' + option_value.innerText + "</span>");
+        $(awselect).find(".front_face .content").prepend('<span class = "current_value">' + label + "</span>");
         $(awselect).addClass("hasValue");
         if (typeof callback !== typeof undefined && callback !== false) {
             window[callback](option_value.val());
